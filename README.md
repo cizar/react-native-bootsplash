@@ -29,8 +29,8 @@ If your company uses it in a production app, consider sponsoring this project �
 
 | version | react-native version |
 | ------- | -------------------- |
+| 5.0.0+  | 0.70.0+              |
 | 4.0.0+  | 0.65.0+              |
-| 3.0.0+  | 0.63.0+              |
 
 ## Installation
 
@@ -41,66 +41,6 @@ $ yarn add react-native-bootsplash
 ```
 
 _⚠️  Don't forget going into the `ios` directory to execute a `pod install`._
-
-## 🆘 Manual linking
-
-Because this package targets React Native 0.65.0+, you probably don't need to link it manually. But if you have a special case, follow these additional instructions:
-
-<details>
-  <summary><b>👀 See manual linking instructions</b></summary>
-
-### iOS
-
-Add this line to your `ios/Podfile` file, then run `pod install`.
-
-```bash
-target 'YourAwesomeProject' do
-  # …
-  pod 'RNBootSplash', :path => '../node_modules/react-native-bootsplash'
-end
-```
-
-### Android
-
-1. Add the following lines to `android/settings.gradle`:
-
-```gradle
-include ':react-native-bootsplash'
-project(':react-native-bootsplash').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-bootsplash/android')
-```
-
-2. Add the implementation line to the dependencies in `android/app/build.gradle`:
-
-```gradle
-dependencies {
-  // ...
-  implementation project(':react-native-bootsplash')
-}
-```
-
-3. Add the import and link the package in `MainApplication.java`:
-
-```java
-import com.zoontek.rnbootsplash.RNBootSplashPackage; // <- add the RNBootSplashPackage import
-
-public class MainApplication extends Application implements ReactApplication {
-
-  // …
-
-  @Override
-  protected List<ReactPackage> getPackages() {
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    List<ReactPackage> packages = new PackageList(this).getPackages();
-    // …
-    packages.add(new RNBootSplashPackage());
-    return packages;
-  }
-
-  // …
-}
-```
-
-</details>
 
 ## Setup
 
