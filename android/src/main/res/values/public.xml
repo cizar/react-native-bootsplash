@@ -4,5 +4,5 @@
     <public name="postSplashScreenTheme" type="attr" />
     <public name="windowSplashScreenAnimatedIcon" type="attr" />
     <public name="windowSplashScreenBackground" type="attr" />
-    <public name="Theme.BootSplash" type="style" />
+    <public name="Theme.SplashScreen" type="style" />
 </resources>

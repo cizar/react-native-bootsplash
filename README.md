@@ -217,8 +217,8 @@ _⚠️  On Android 12, the splash screen will not appear if you start your ap
       <!-- Your base theme customization -->
   </style>
 
-  <!-- BootTheme should inherit from Theme.BootSplash -->
-  <style name="BootTheme" parent="Theme.BootSplash">
+  <!-- BootTheme should inherit from Theme.SplashScreen -->
+  <style name="BootTheme" parent="Theme.SplashScreen">
     <item name="windowSplashScreenBackground">@color/bootsplash_background</item>
     <item name="windowSplashScreenAnimatedIcon">@mipmap/bootsplash_logo</item>
     <item name="postSplashScreenTheme">@style/AppTheme</item>

@@ -1,18 +1,23 @@
 package com.zoontek.rnbootsplash;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
-import android.content.DialogInterface;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.animation.AccelerateInterpolator;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.window.SplashScreen;
 import android.window.SplashScreenView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.StyleRes;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.react.bridge.Promise;
@@ -31,11 +36,8 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
   public static final String NAME = "RNBootSplash";
 
-  @Nullable
-  private static RNBootSplashDialog mDialog = null;
-
   private static final RNBootSplashQueue<Promise> mPromiseQueue = new RNBootSplashQueue<>();
-  private static boolean mShouldKeepOnScreen = true;
+  private static boolean mSplashVisible = false;
 
   public RNBootSplashModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -46,8 +48,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     return NAME;
   }
 
-  protected static void init(@Nullable final Activity activity,
-                             @StyleRes final int bootThemeResId) {
+  protected static void init(@Nullable final Activity activity) {
     if (activity == null) {
       FLog.w(
         ReactConstants.TAG,
@@ -55,10 +56,25 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
       return;
     }
 
-    // Apply postSplashScreenTheme
+    mSplashVisible = true;
+
     TypedValue typedValue = new TypedValue();
     Resources.Theme currentTheme = activity.getTheme();
 
+    int backgroundResId = 0;
+    @Nullable Drawable icon = null;
+
+    if (currentTheme
+      .resolveAttribute(R.attr.windowSplashScreenBackground, typedValue, true)) {
+      backgroundResId = typedValue.resourceId;
+    }
+
+    if (currentTheme
+      .resolveAttribute(R.attr.windowSplashScreenAnimatedIcon, typedValue, true)) {
+      icon = currentTheme.getDrawable(typedValue.resourceId);
+    }
+
+    // Apply postSplashScreenTheme
     if (currentTheme
       .resolveAttribute(R.attr.postSplashScreenTheme, typedValue, true)) {
       int finalThemeId = typedValue.resourceId;
@@ -70,13 +86,14 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
     // Keep the splash screen on-screen until Dialog is shown
     final View contentView = activity.findViewById(android.R.id.content);
+    final boolean[] shouldKeepOnScreen = {true};
 
     contentView
       .getViewTreeObserver()
       .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
         @Override
         public boolean onPreDraw() {
-          if (mShouldKeepOnScreen) {
+          if (shouldKeepOnScreen[0]) {
             return false;
           }
 
@@ -101,24 +118,40 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
         });
     }
 
+    final int finalBackgroundResId = backgroundResId;
+    @Nullable final Drawable finalIcon = icon;
+
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        mDialog = new RNBootSplashDialog(activity, bootThemeResId);
+        View splashScreenView = FrameLayout.inflate(
+          activity,
+          R.layout.splash_screen_view,
+          null
+        );
 
-        mDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-          @Override
-          public void onShow(DialogInterface dialog) {
-            mShouldKeepOnScreen = false;
-          }
-        });
+        splashScreenView.setId(R.id.splash_screen_view);
 
-        mDialog.show();
+        if (finalBackgroundResId != 0) {
+          splashScreenView.setBackgroundResource(finalBackgroundResId);
+        }
+
+        if (finalIcon != null) {
+          ImageView iconView = splashScreenView.findViewById(R.id.splashscreen_icon_view);
+          iconView.setImageDrawable(finalIcon);
+        }
+
+        ViewGroup rootView = (ViewGroup) contentView.getRootView();
+        rootView.addView(splashScreenView);
+
+        shouldKeepOnScreen[0] = false;
       }
     });
   }
 
   private void clearPromiseQueue() {
+    mSplashVisible = false;
+
     while (!mPromiseQueue.isEmpty()) {
       Promise promise = mPromiseQueue.shift();
 
@@ -136,7 +169,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
         timer.cancel();
         hideAndResolveAll(fade);
       }
-    }, 250);
+    }, 100);
   }
 
   private void hideAndResolveAll(final boolean fade) {
@@ -150,26 +183,41 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
           return;
         }
 
-        if (mDialog == null) {
+        final View view = activity.findViewById(R.id.splash_screen_view);
+
+        if (view == null) {
           clearPromiseQueue();
           return;
         }
 
-        mDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-          @Override
-          public void onDismiss(DialogInterface dialog) {
-            mDialog = null;
-            clearPromiseQueue();
+        final ViewGroup parent = (ViewGroup) view.getParent();
+
+        if (fade) {
+          view
+            .animate()
+            .alpha(0.0f)
+            .setDuration(250)
+            .setListener(new AnimatorListenerAdapter() {
+              @Override
+              public void onAnimationEnd(Animator animation) {
+                super.onAnimationEnd(animation);
+
+                if (parent != null) {
+                  parent.removeView(view);
+                }
+
+                clearPromiseQueue();
+              }
+            })
+            .setInterpolator(new AccelerateInterpolator())
+            .start();
+        } else {
+          if (parent != null) {
+            parent.removeView(view);
           }
-        });
 
-        mDialog.setWindowAnimations(
-          fade
-            ? R.style.Theme_BootSplashDialogFading
-            : R.style.Theme_BootSplashDialogNoAnimation
-        );
-
-         mDialog.dismiss();
+          clearPromiseQueue();
+        }
       }
     });
   }
@@ -182,6 +230,6 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void getVisibilityStatus(final Promise promise) {
-    promise.resolve(mDialog != null ? "visible" : "hidden");
+    promise.resolve(mSplashVisible ? "visible" : "hidden");
   }
 }
