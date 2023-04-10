@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <public name="postSplashScreenTheme" type="attr" />
+    <public name="windowSplashScreenAnimatedIcon" type="attr" />
+    <public name="windowSplashScreenBackground" type="attr" />
+    <public name="Theme.BootSplash" type="style" />
+</resources>

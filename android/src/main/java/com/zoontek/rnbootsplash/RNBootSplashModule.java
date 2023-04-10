@@ -1,17 +1,18 @@
 package com.zoontek.rnbootsplash;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
 import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.res.Resources;
 import android.os.Build;
+import android.util.TypedValue;
 import android.view.View;
-import android.view.animation.AccelerateInterpolator;
+import android.view.ViewTreeObserver;
+import android.window.SplashScreen;
 import android.window.SplashScreenView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.splashscreen.SplashScreen;
-import androidx.core.splashscreen.SplashScreenViewProvider;
+import androidx.annotation.StyleRes;
 
 import com.facebook.common.logging.FLog;
 import com.facebook.react.bridge.Promise;
@@ -37,12 +38,10 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
   }
 
   @Nullable
-  private static SplashScreen mSplashScreen = null;
+  private static RNBootSplashDialog mDialog = null;
 
   private static final RNBootSplashQueue<Promise> mPromiseQueue = new RNBootSplashQueue<>();
   private static Status mStatus = Status.HIDDEN;
-  private static int mFadeDuration = 0;
-  private static boolean mShouldKeepOnScreen = true;
 
   public RNBootSplashModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -53,7 +52,8 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     return NAME;
   }
 
-  protected static void init(@Nullable final Activity activity) {
+  protected static void init(@Nullable final Activity activity,
+                             @StyleRes final int bootThemeResId) {
     if (activity == null) {
       FLog.w(
         ReactConstants.TAG,
@@ -61,41 +61,69 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
       return;
     }
 
-    mSplashScreen = SplashScreen.installSplashScreen(activity);
     mStatus = Status.VISIBLE;
 
-    mSplashScreen.setKeepOnScreenCondition(new SplashScreen.KeepOnScreenCondition() {
+    // Apply postSplashScreenTheme
+    TypedValue typedValue = new TypedValue();
+    Resources.Theme currentTheme = activity.getTheme();
+
+    if (currentTheme
+      .resolveAttribute(R.attr.postSplashScreenTheme, typedValue, true)) {
+      int finalThemeId = typedValue.resourceId;
+
+      if (finalThemeId != 0) {
+        activity.setTheme(finalThemeId);
+      }
+    }
+
+    // Keep the splash screen on-screen until Dialog is shown
+    final View contentView = activity.findViewById(android.R.id.content);
+    final boolean[] shouldKeepOnScreen = {true};
+
+    contentView
+      .getViewTreeObserver()
+      .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+        @Override
+        public boolean onPreDraw() {
+          if (shouldKeepOnScreen[0]) {
+            return false;
+          }
+
+          contentView
+            .getViewTreeObserver()
+            .removeOnPreDrawListener(this);
+
+          return true;
+        }
+      });
+
+    // This is not called on Android 12 when activity is started using intent
+    // (Android studio / CLI / notification / widget…)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      activity
+        .getSplashScreen()
+        .setOnExitAnimationListener(new SplashScreen.OnExitAnimationListener() {
+          @Override
+          public void onSplashScreenExit(@NonNull SplashScreenView view) {
+            view.remove(); // Remove it immediately, without animation
+          }
+        });
+    }
+
+    mDialog = new RNBootSplashDialog(activity, bootThemeResId);
+
+    mDialog.setOnShowListener(new DialogInterface.OnShowListener() {
       @Override
-      public boolean shouldKeepOnScreen() {
-        return mShouldKeepOnScreen;
+      public void onShow(DialogInterface dialog) {
+        shouldKeepOnScreen[0] = false;
       }
     });
 
-    mSplashScreen.setOnExitAnimationListener(new SplashScreen.OnExitAnimationListener() {
+    UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
-      public void onSplashScreenExit(@NonNull final SplashScreenViewProvider splashScreenViewProvider) {
-        final View splashScreenView = splashScreenViewProvider.getView();
-
-        splashScreenView
-          .animate()
-          .setDuration(mFadeDuration)
-          // Crappy hack to avoid automatic layout transitions
-          .setStartDelay(Math.min(0, mFadeDuration))
-          .alpha(0.0f)
-          .setInterpolator(new AccelerateInterpolator())
-          .setListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-              super.onAnimationEnd(animation);
-
-              if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                splashScreenViewProvider.remove();
-              } else {
-                // Avoid calling applyThemesSystemBarAppearance
-                ((SplashScreenView) splashScreenView).remove();
-              }
-            }
-          }).start();
+      public void run() {
+        mDialog.setWindowAnimations(R.style.Theme_NoAnimBootSplashDialog);
+        mDialog.show();
       }
     });
   }
@@ -109,12 +137,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     }
   }
 
-  private void hideAndResolveAll() {
-    if (mSplashScreen == null || mStatus == Status.HIDDEN) {
-      clearPromiseQueue();
-      return;
-    }
-
+  private void hideAndResolveAll(final boolean fade) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -127,39 +150,39 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
           timer.schedule(new TimerTask() {
             @Override
             public void run() {
-              hideAndResolveAll();
               timer.cancel();
+              hideAndResolveAll(fade);
             }
           }, 250);
+        } else if (mDialog == null || mStatus == Status.HIDDEN) {
+          clearPromiseQueue();
         } else {
-          if (mFadeDuration > 0) {
+          if (fade) {
             mStatus = Status.TRANSITIONING;
+            mDialog.setWindowAnimations(R.style.Theme_FadingBootSplashDialog);
+          } else {
+            mDialog.setWindowAnimations(R.style.Theme_NoAnimBootSplashDialog);
           }
 
-          mShouldKeepOnScreen = false;
-
-          final Timer timer = new Timer();
-
-          // We cannot rely on setOnExitAnimationListener
-          // See https://issuetracker.google.com/issues/197906327
-          timer.schedule(new TimerTask() {
+          mDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
-            public void run() {
+            public void onDismiss(DialogInterface dialog) {
               mStatus = Status.HIDDEN;
-              timer.cancel();
+              mDialog = null;
               clearPromiseQueue();
             }
-          }, mFadeDuration);
+          });
+
+          mDialog.dismiss();
         }
       }
     });
   }
 
   @ReactMethod
-  public void hide(final double duration, final Promise promise) {
-    mFadeDuration = (int) Math.round(duration);
+  public void hide(final boolean fade, final Promise promise) {
     mPromiseQueue.push(promise);
-    hideAndResolveAll();
+    hideAndResolveAll(fade);
   }
 
   @ReactMethod

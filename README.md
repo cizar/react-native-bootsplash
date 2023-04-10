@@ -204,25 +204,11 @@ Set the `BootSplash.storyboard` as launch screen file:
 
 ### Android
 
-_⚠️  On Android >= 12, the splash screen will not appear if you start your app from the terminal / Android Studio. To see it, kill your app and restart it in normal conditions (tap on your app icon in the app launcher)._
+_⚠️  On Android 12, the splash screen will not appear if you start your app from the terminal / Android Studio. To see it, kill your app and restart it in normal conditions (tap on your app icon in the app launcher)._
 
 ---
 
-1. Edit your `android/app/build.gradle` file:
-
-```gradle
-dependencies {
-  // …
-
-  implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.0.0")
-  implementation("androidx.core:core-splashscreen:1.0.0") // Add this line
-
-  // …
-```
-
-_⚠️  Don't forget going into the `android` directory to execute a `./gradlew clean && ./gradlew build` (or perform a Gradle sync in Android Studio)._
-
-2. Edit your `android/app/src/main/res/values/styles.xml` file:
+1. Edit your `android/app/src/main/res/values/styles.xml` file:
 
 ```xml
 <resources>
@@ -231,8 +217,8 @@ _⚠️  Don't forget going into the `android` directory to execute a `./gradl
       <!-- Your base theme customization -->
   </style>
 
-  <!-- BootTheme should inherit from Theme.SplashScreen -->
-  <style name="BootTheme" parent="Theme.SplashScreen">
+  <!-- BootTheme should inherit from Theme.BootSplash -->
+  <style name="BootTheme" parent="Theme.BootSplash">
     <item name="windowSplashScreenBackground">@color/bootsplash_background</item>
     <item name="windowSplashScreenAnimatedIcon">@mipmap/bootsplash_logo</item>
     <item name="postSplashScreenTheme">@style/AppTheme</item>
@@ -241,7 +227,7 @@ _⚠️  Don't forget going into the `android` directory to execute a `./gradl
 </resources>
 ```
 
-3. Edit your `android/app/src/main/AndroidManifest.xml` file:
+2. Edit your `android/app/src/main/AndroidManifest.xml` file:
 
 ```xml
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -249,20 +235,21 @@ _⚠️  Don't forget going into the `android` directory to execute a `./gradl
 
   <!-- … -->
 
-  <application
-    android:name=".MainApplication"
+  <activity
+    android:name=".MainActivity"
     android:label="@string/app_name"
-    android:icon="@mipmap/ic_launcher"
-    android:roundIcon="@mipmap/ic_launcher_round"
-    android:allowBackup="false"
-    android:theme="@style/BootTheme"> <!-- Replace @style/AppTheme with @style/BootTheme -->
+    android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+    android:launchMode="singleTask"
+    android:windowSoftInputMode="adjustResize"
+    android:exported="true"
+    android:theme="@style/BootTheme"> <!-- Apply @style/BootTheme to your MainActivity -->
     <!-- … -->
   </application>
 </manifest>
 
 ```
 
-4. Finally edit your `android/app/src/main/java/com/yourprojectname/MainActivity.java` file:
+3. Finally edit your `android/app/src/main/java/com/yourprojectname/MainActivity.java` file:
 
 ```java
 // …
@@ -290,10 +277,8 @@ public class MainActivity extends ReactActivity {
 #### Method type
 
 ```ts
-type hide = (config?: { fade?: boolean; duration?: number }) => Promise<void>;
+type hide = (config?: { fade?: boolean }) => Promise<void>;
 ```
-
-Note: Only durations above 220ms are visually noticeable. Smaller values will be ignored and the default duration will be used.
 
 #### Usage
 
@@ -301,8 +286,7 @@ Note: Only durations above 220ms are visually noticeable. Smaller values will be
 import RNBootSplash from "react-native-bootsplash";
 
 RNBootSplash.hide(); // immediate
-RNBootSplash.hide({ fade: true }); // fade with 220ms default duration
-RNBootSplash.hide({ fade: true, duration: 500 }); // fade with custom duration
+RNBootSplash.hide({ fade: true }); // fade
 ```
 
 ### getVisibilityStatus()
@@ -336,8 +320,8 @@ function App() {
     };
 
     init().finally(async () => {
-      await RNBootSplash.hide({ fade: true, duration: 500 });
-      console.log("Bootsplash has been hidden successfully");
+      await RNBootSplash.hide({ fade: true });
+      console.log("BootSplash has been hidden successfully");
     });
   }, []);
 
@@ -391,8 +375,3 @@ After that, we need to add the setup file in the jest config. You can add it und
   "setupFiles": ["<rootDir>/jest/setup.js"]
 }
 ```
-
-## 🕵️‍♂️ Comparison with [react-native-splash-screen](https://github.com/crazycodeboy/react-native-splash-screen)
-
-- If `react-native-splash-screen` encourages you to display an image over your application, `react-native-bootsplash` way-to-go is to design your launch screen using platforms tools.
-- Hiding the launch screen is configurable: fade it out or hide it without any animation.

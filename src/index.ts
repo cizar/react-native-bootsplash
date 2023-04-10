@@ -1,16 +1,15 @@
 import { NativeModules } from "react-native";
 
 export type VisibilityStatus = "visible" | "hidden" | "transitioning";
-export type Config = { fade?: boolean; duration?: number };
+export type Config = { fade?: boolean };
 
 const NativeModule: {
-  hide: (duration: number) => Promise<true>;
+  hide: (fade: boolean) => Promise<true>;
   getVisibilityStatus: () => Promise<VisibilityStatus>;
 } = NativeModules.RNBootSplash;
 
 export function hide(config: Config = {}): Promise<void> {
-  const { fade = false, duration = 0 } = config;
-  return NativeModule.hide(fade ? Math.max(duration, 220) : 0).then(() => {});
+  return NativeModule.hide({ fade: false, ...config }.fade).then(() => {});
 }
 
 export function getVisibilityStatus(): Promise<VisibilityStatus> {
