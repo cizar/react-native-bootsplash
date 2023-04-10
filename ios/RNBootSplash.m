@@ -7,7 +7,6 @@ static NSMutableArray<RCTPromiseResolveBlock> *_resolverQueue = nil;
 static RCTRootView *_rootView = nil;
 static bool _nativeHidden = false;
 static bool _shouldFade = false;
-static bool _transitioning = false;
 
 @implementation RNBootSplash
 
@@ -52,10 +51,8 @@ RCT_EXPORT_MODULE();
     return [RNBootSplash clearResolverQueue];
   } else {
     dispatch_async(dispatch_get_main_queue(), ^{
-      _transitioning = true;
-
       [UIView transitionWithView:_rootView
-                        duration:250.0
+                        duration:0.250
                          options:UIViewAnimationOptionTransitionCrossDissolve
                       animations:^{
         _rootView.loadingView.hidden = YES;
@@ -64,7 +61,6 @@ RCT_EXPORT_MODULE();
         [_rootView.loadingView removeFromSuperview];
         _rootView.loadingView = nil;
 
-        _transitioning = false;
         return [RNBootSplash clearResolverQueue];
       }];
     });
@@ -143,12 +139,7 @@ RCT_REMAP_METHOD(hide,
 RCT_REMAP_METHOD(getVisibilityStatus,
                  getVisibilityStatusWithResolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject) {
-  if ([RNBootSplash isLoadingViewHidden])
-    return resolve(@"hidden");
-  else if (_transitioning)
-    return resolve(@"transitioning");
-  else
-    return resolve(@"visible");
+  return resolve([RNBootSplash isLoadingViewHidden] ? @"hidden" : @"visible");
 }
 
 @end

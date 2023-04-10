@@ -11,12 +11,12 @@
         <item name="windowSplashScreenBackground">?android:colorBackground</item>
     </style>
 
-    <style name="Theme.NoAnimBootSplashDialog">
+    <style name="Theme.BootSplashDialogNoAnimation">
         <item name="android:windowEnterAnimation">@null</item>
         <item name="android:windowExitAnimation">@null</item>
     </style>
 
-    <style name="Theme.FadingBootSplashDialog">
+    <style name="Theme.BootSplashDialogFading">
         <item name="android:windowEnterAnimation">@anim/fade_in</item>
         <item name="android:windowExitAnimation">@anim/fade_out</item>
     </style>

@@ -31,17 +31,11 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
   public static final String NAME = "RNBootSplash";
 
-  private enum Status {
-    VISIBLE,
-    HIDDEN,
-    TRANSITIONING
-  }
-
   @Nullable
   private static RNBootSplashDialog mDialog = null;
 
   private static final RNBootSplashQueue<Promise> mPromiseQueue = new RNBootSplashQueue<>();
-  private static Status mStatus = Status.HIDDEN;
+  private static boolean mShouldKeepOnScreen = true;
 
   public RNBootSplashModule(ReactApplicationContext reactContext) {
     super(reactContext);
@@ -61,8 +55,6 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
       return;
     }
 
-    mStatus = Status.VISIBLE;
-
     // Apply postSplashScreenTheme
     TypedValue typedValue = new TypedValue();
     Resources.Theme currentTheme = activity.getTheme();
@@ -78,14 +70,13 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
     // Keep the splash screen on-screen until Dialog is shown
     final View contentView = activity.findViewById(android.R.id.content);
-    final boolean[] shouldKeepOnScreen = {true};
 
     contentView
       .getViewTreeObserver()
       .addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
         @Override
         public boolean onPreDraw() {
-          if (shouldKeepOnScreen[0]) {
+          if (mShouldKeepOnScreen) {
             return false;
           }
 
@@ -97,9 +88,9 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
         }
       });
 
-    // This is not called on Android 12 when activity is started using intent
-    // (Android studio / CLI / notification / widget…)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      // This is not called on Android 12 when activity is started using intent
+      // (Android studio / CLI / notification / widget…)
       activity
         .getSplashScreen()
         .setOnExitAnimationListener(new SplashScreen.OnExitAnimationListener() {
@@ -110,19 +101,18 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
         });
     }
 
-    mDialog = new RNBootSplashDialog(activity, bootThemeResId);
-
-    mDialog.setOnShowListener(new DialogInterface.OnShowListener() {
-      @Override
-      public void onShow(DialogInterface dialog) {
-        shouldKeepOnScreen[0] = false;
-      }
-    });
-
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        mDialog.setWindowAnimations(R.style.Theme_NoAnimBootSplashDialog);
+        mDialog = new RNBootSplashDialog(activity, bootThemeResId);
+
+        mDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+          @Override
+          public void onShow(DialogInterface dialog) {
+            mShouldKeepOnScreen = false;
+          }
+        });
+
         mDialog.show();
       }
     });
@@ -137,6 +127,18 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     }
   }
 
+  private void waitAndHide(final boolean fade) {
+    final Timer timer = new Timer();
+
+    timer.schedule(new TimerTask() {
+      @Override
+      public void run() {
+        timer.cancel();
+        hideAndResolveAll(fade);
+      }
+    }, 250);
+  }
+
   private void hideAndResolveAll(final boolean fade) {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
@@ -144,37 +146,30 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
         final Activity activity = getReactApplicationContext().getCurrentActivity();
 
         if (activity == null || activity.isFinishing()) {
-          // Wait for activity to be ready
-          final Timer timer = new Timer();
-
-          timer.schedule(new TimerTask() {
-            @Override
-            public void run() {
-              timer.cancel();
-              hideAndResolveAll(fade);
-            }
-          }, 250);
-        } else if (mDialog == null || mStatus == Status.HIDDEN) {
-          clearPromiseQueue();
-        } else {
-          if (fade) {
-            mStatus = Status.TRANSITIONING;
-            mDialog.setWindowAnimations(R.style.Theme_FadingBootSplashDialog);
-          } else {
-            mDialog.setWindowAnimations(R.style.Theme_NoAnimBootSplashDialog);
-          }
-
-          mDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-            @Override
-            public void onDismiss(DialogInterface dialog) {
-              mStatus = Status.HIDDEN;
-              mDialog = null;
-              clearPromiseQueue();
-            }
-          });
-
-          mDialog.dismiss();
+          waitAndHide(fade);
+          return;
         }
+
+        if (mDialog == null) {
+          clearPromiseQueue();
+          return;
+        }
+
+        mDialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+          @Override
+          public void onDismiss(DialogInterface dialog) {
+            mDialog = null;
+            clearPromiseQueue();
+          }
+        });
+
+        mDialog.setWindowAnimations(
+          fade
+            ? R.style.Theme_BootSplashDialogFading
+            : R.style.Theme_BootSplashDialogNoAnimation
+        );
+
+         mDialog.dismiss();
       }
     });
   }
@@ -187,16 +182,6 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
   @ReactMethod
   public void getVisibilityStatus(final Promise promise) {
-    switch (mStatus) {
-      case VISIBLE:
-        promise.resolve("visible");
-        break;
-      case HIDDEN:
-        promise.resolve("hidden");
-        break;
-      case TRANSITIONING:
-        promise.resolve("transitioning");
-        break;
-    }
+    promise.resolve(mDialog != null ? "visible" : "hidden");
   }
 }

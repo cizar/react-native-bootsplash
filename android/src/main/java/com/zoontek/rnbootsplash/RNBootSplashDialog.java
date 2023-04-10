@@ -28,6 +28,7 @@ public class RNBootSplashDialog extends Dialog {
 
     if (window != null) {
       window.setLayout(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+      window.setWindowAnimations(R.style.Theme_BootSplashDialogNoAnimation);
     }
 
     super.onCreate(savedInstanceState);

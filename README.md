@@ -294,7 +294,7 @@ RNBootSplash.hide({ fade: true }); // fade
 #### Method type
 
 ```ts
-type VisibilityStatus = "visible" | "hidden" | "transitioning";
+type VisibilityStatus = "visible" | "hidden";
 type getVisibilityStatus = () => Promise<VisibilityStatus>;
 ```
 
