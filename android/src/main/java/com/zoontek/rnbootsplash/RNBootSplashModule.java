@@ -37,6 +37,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
   public static final String NAME = "RNBootSplash";
 
   private static final RNBootSplashQueue<Promise> mPromiseQueue = new RNBootSplashQueue<>();
+  private static int mFadeDuration = 0;
   private static boolean mSplashVisible = false;
 
   public RNBootSplashModule(ReactApplicationContext reactContext) {
@@ -160,26 +161,26 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     }
   }
 
-  private void waitAndHide(final boolean fade) {
+  private void waitAndHide() {
     final Timer timer = new Timer();
 
     timer.schedule(new TimerTask() {
       @Override
       public void run() {
         timer.cancel();
-        hideAndResolveAll(fade);
+        hideAndClearPromiseQueue();
       }
     }, 100);
   }
 
-  private void hideAndResolveAll(final boolean fade) {
+  private void hideAndClearPromiseQueue() {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         final Activity activity = getReactApplicationContext().getCurrentActivity();
 
         if (activity == null || activity.isFinishing()) {
-          waitAndHide(fade);
+          waitAndHide();
           return;
         }
 
@@ -192,11 +193,11 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
         final ViewGroup parent = (ViewGroup) view.getParent();
 
-        if (fade) {
+        if (mFadeDuration > 0) {
           view
             .animate()
             .alpha(0.0f)
-            .setDuration(250)
+            .setDuration(mFadeDuration)
             .setListener(new AnimatorListenerAdapter() {
               @Override
               public void onAnimationEnd(Animator animation) {
@@ -223,9 +224,10 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void hide(final boolean fade, final Promise promise) {
+  public void hide(final double duration, final Promise promise) {
+    mFadeDuration = (int) Math.round(duration);
     mPromiseQueue.push(promise);
-    hideAndResolveAll(fade);
+    hideAndClearPromiseQueue();
   }
 
   @ReactMethod

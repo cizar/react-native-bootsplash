@@ -242,7 +242,7 @@ _⚠️  On Android 12, the splash screen will not appear if you start your ap
     android:launchMode="singleTask"
     android:windowSoftInputMode="adjustResize"
     android:exported="true"
-    android:theme="@style/BootTheme"> <!-- Apply @style/BootTheme to your MainActivity -->
+    android:theme="@style/BootTheme"> <!-- Apply @style/BootTheme to MainActivity -->
     <!-- … -->
   </application>
 </manifest>
@@ -277,8 +277,10 @@ public class MainActivity extends ReactActivity {
 #### Method type
 
 ```ts
-type hide = (config?: { fade?: boolean }) => Promise<void>;
+type hide = (config?: { duration?: number }) => Promise<void>;
 ```
+
+_⚠️  Duration values smaller than 220ms will be ignored and the default duration will be used._
 
 #### Usage
 
@@ -286,7 +288,7 @@ type hide = (config?: { fade?: boolean }) => Promise<void>;
 import RNBootSplash from "react-native-bootsplash";
 
 RNBootSplash.hide(); // immediate
-RNBootSplash.hide({ fade: true }); // fade
+RNBootSplash.hide({ duration: 250 }); // fade
 ```
 
 ### getVisibilityStatus()
@@ -294,7 +296,7 @@ RNBootSplash.hide({ fade: true }); // fade
 #### Method type
 
 ```ts
-type VisibilityStatus = "visible" | "hidden";
+type VisibilityStatus = "hidden" | "visible";
 type getVisibilityStatus = () => Promise<VisibilityStatus>;
 ```
 
@@ -320,7 +322,7 @@ function App() {
     };
 
     init().finally(async () => {
-      await RNBootSplash.hide({ fade: true });
+      await RNBootSplash.hide({ duration: 250 });
       console.log("BootSplash has been hidden successfully");
     });
   }, []);
