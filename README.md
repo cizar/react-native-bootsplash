@@ -44,8 +44,6 @@ _⚠️  Don't forget going into the `ios` directory to execute a `pod install
 
 ## Setup
 
-ℹ️ For `react-native` < `0.71` setup, follow the [`v4.4.0 README.md`](https://github.com/zoontek/react-native-bootsplash/blob/4.4.0/README.md).
-
 ### Assets generation
 
 In order to speed up the setup, we provide a **CLI** to generate assets, create the Android Drawable XML file and the iOS Storyboard file automatically ✨.
@@ -118,7 +116,7 @@ Edit the `ios/YourProjectName/AppDelegate.mm` file:
 
 ```obj-c
 #import "AppDelegate.h"
-#import "RNBootSplash.h" // <- add the header import
+#import "RNBootSplash.h" // add the header import
 
 // …
 
@@ -126,11 +124,10 @@ Edit the `ios/YourProjectName/AppDelegate.mm` file:
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-  self.moduleName = @"RNBootSplashExample";
-  self.initialProps = @{};
-  [super application:application didFinishLaunchingWithOptions:launchOptions];
-
-  [RNBootSplash initWithStoryboard:@"BootSplash" rootView:self.window.rootViewController.view]; // <- initialization using the storyboard file name
+  // …
+  // add this just before the function return:
+  UIView *rootView = self.window.rootViewController.view; // only required by >= react-native 0.71
+  [RNBootSplash initWithStoryboard:@"BootSplash" rootView:rootView]; // initialize the splash screen
 
   return YES;
 }
@@ -204,7 +201,7 @@ public class MainActivity extends ReactActivity {
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-    RNBootSplash.init(this); // <- initialize the splash screen
+    RNBootSplash.init(this); // initialize the splash screen
     super.onCreate(savedInstanceState); // or super.onCreate(null) with react-native-screens
   }
 }
