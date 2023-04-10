@@ -193,7 +193,10 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
         final ViewGroup parent = (ViewGroup) view.getParent();
 
-        if (mFadeDuration > 0) {
+        if (mFadeDuration <= 0) {
+          parent.removeView(view);
+          clearPromiseQueue();
+        } else {
           view
             .animate()
             .alpha(0.0f)
@@ -212,12 +215,6 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
             })
             .setInterpolator(new AccelerateInterpolator())
             .start();
-        } else {
-          if (parent != null) {
-            parent.removeView(view);
-          }
-
-          clearPromiseQueue();
         }
       }
     });
