@@ -42,9 +42,9 @@ const getStoryboard = ({
   width: number;
   backgroundColor: string;
 }) => {
-  const r = (parseInt(hex[1] + hex[2], 16) / 255).toPrecision(15);
-  const g = (parseInt(hex[3] + hex[4], 16) / 255).toPrecision(15);
-  const b = (parseInt(hex[5] + hex[6], 16) / 255).toPrecision(15);
+  const r = (parseInt(hex.substring(1, 3), 16) / 255).toPrecision(15);
+  const g = (parseInt(hex.substring(3, 5), 16) / 255).toPrecision(15);
+  const b = (parseInt(hex.substring(5, 7), 16) / 255).toPrecision(15);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21507" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">

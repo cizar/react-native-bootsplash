@@ -1,15 +1,7 @@
 import * as React from "react";
-import {
-  Animated,
-  Button,
-  Dimensions,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
 import { SystemBars } from "react-native-bars";
 import * as BootSplash from "react-native-bootsplash";
-import { requestNotifications } from "react-native-permissions";
 
 const bootSplashLogo = require("./assets/bootsplash_logo.png");
 
@@ -90,13 +82,6 @@ export const App = () => {
       <SystemBars barStyle="dark-content" />
 
       <Text style={styles.text}>Hello, Dave.</Text>
-
-      <Button
-        title="Activate push notifications"
-        onPress={() => {
-          requestNotifications(["alert"]);
-        }}
-      />
 
       {bootSplashIsVisible && (
         <Animated.View
