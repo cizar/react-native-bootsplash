@@ -126,7 +126,7 @@ Edit the `ios/YourProjectName/AppDelegate.mm` file:
 {
   // …
   // add this just before the function return:
-  UIView *rootView = self.window.rootViewController.view; // only required by >= react-native 0.71
+  UIView *rootView = self.window.rootViewController.view; // only required by react-native >= 0.71
   [RNBootSplash initWithStoryboard:@"BootSplash" rootView:rootView]; // initialize the splash screen
 
   return YES;
