@@ -288,10 +288,6 @@ function App() {
 }
 ```
 
-## With react-native-bars
-
-In order to keep fully transparent status and navigation bars on Android once the splash screen is hidden (and control them), this library play nicely with [react-native-bars](https://github.com/zoontek/react-native-bars). Check its [README](https://github.com/zoontek/react-native-bars/blob/main/README.md#with-react-native-bootsplash) for more informations.
-
 ## Testing with Jest
 
 Testing code which uses this library requires some setup since we need to mock the native methods.
