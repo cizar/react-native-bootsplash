@@ -62,7 +62,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     Resources.Theme currentTheme = activity.getTheme();
 
     int backgroundResId = 0;
-    @Nullable Drawable icon = null;
+    Drawable iconDrawable = null;
 
     if (currentTheme
       .resolveAttribute(R.attr.windowSplashScreenBackground, typedValue, true)) {
@@ -71,7 +71,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
 
     if (currentTheme
       .resolveAttribute(R.attr.windowSplashScreenAnimatedIcon, typedValue, true)) {
-      icon = currentTheme.getDrawable(typedValue.resourceId);
+      iconDrawable = currentTheme.getDrawable(typedValue.resourceId);
     }
 
     // Apply postSplashScreenTheme
@@ -119,7 +119,7 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     }
 
     final int finalBackgroundResId = backgroundResId;
-    @Nullable final Drawable finalIcon = icon;
+    final Drawable finalIconDrawable = iconDrawable;
 
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
@@ -136,9 +136,9 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
           splashScreenView.setBackgroundResource(finalBackgroundResId);
         }
 
-        if (finalIcon != null) {
+        if (finalIconDrawable != null) {
           ImageView iconView = splashScreenView.findViewById(R.id.splashscreen_icon_view);
-          iconView.setImageDrawable(finalIcon);
+          iconView.setImageDrawable(finalIconDrawable);
         }
 
         ViewGroup rootView = (ViewGroup) contentView.getRootView();
