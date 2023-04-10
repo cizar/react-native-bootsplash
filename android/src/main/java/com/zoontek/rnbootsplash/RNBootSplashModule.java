@@ -125,25 +125,25 @@ public class RNBootSplashModule extends ReactContextBaseJavaModule {
     UiThreadUtil.runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        View splashView = FrameLayout.inflate(
+        View view = FrameLayout.inflate(
           activity,
           R.layout.splash_screen_view,
           null
         );
 
-        splashView.setId(R.id.splash_screen_view);
+        view.setId(R.id.splash_screen_view);
 
         if (finalBackgroundResId != 0) {
-          splashView.setBackgroundResource(finalBackgroundResId);
+          view.setBackgroundResource(finalBackgroundResId);
         }
 
         if (finalIconDrawable != null) {
-          ImageView iconView = splashView.findViewById(R.id.splashscreen_icon_view);
+          ImageView iconView = view.findViewById(R.id.splashscreen_icon_view);
           iconView.setImageDrawable(finalIconDrawable);
         }
 
         ViewGroup rootView = (ViewGroup) contentView.getRootView();
-        rootView.addView(splashView);
+        rootView.addView(view);
 
         shouldKeepOnScreen[0] = false;
       }
